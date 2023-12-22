@@ -43,9 +43,10 @@ function EditorPage() {
         ({ clients, username, socketId }) => {
           // this insure that new user connected message do not display to that user itself
           if (username !== Location.state?.username) {
-            toast.success(`${username} joined the room.`);
           }
           setClients(clients);
+          toast.success(`${username} joined the room.`);
+
           // also send the code to sync
           socketRef.current.emit(ACTIONS.SYNC_CODE, {
             code: codeRef.current,
