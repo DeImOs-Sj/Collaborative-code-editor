@@ -7,7 +7,7 @@ import "codemirror/lib/codemirror.css";
 import CodeMirror from "codemirror";
 import { ACTIONS } from "../Actions";
 
-function Editor({ socketRef, roomId, onCodeChange }) {
+function Editor({ socketRef, roomId, username, onCodeChange }) {
   const editorRef = useRef(null);
   useEffect(() => {
     const init = async () => {
@@ -45,9 +45,9 @@ function Editor({ socketRef, roomId, onCodeChange }) {
   // data receive from server
   useEffect(() => {
     if (socketRef.current) {
-      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
+      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code, username }) => {
         if (code !== null) {
-          editorRef.current.setValue(code);
+          editorRef.current.setValue(code, username);
         }
       });
     }

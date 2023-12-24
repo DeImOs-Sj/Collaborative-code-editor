@@ -81,9 +81,6 @@ const getAllConnectedClients = (roomId) => {
   );
 };
 
-const cursors = {}; // Maintain a dictionary of cursors for each user in the room
-
-
 io.on("connection", (socket) => {
   // console.log('Socket connected', socket.id);
   socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
@@ -102,37 +99,25 @@ io.on("connection", (socket) => {
     });
   });
   // Server-side
-
-  // Listen for cursor position updates
-  socket.on(ACTIONS.CURSOR_POSITION_UPDATE, ({ roomId, username, x, y }) => {
-    // Update the cursor position for the user
-
-    cursors[username] = { x, y };
-    socket.in(roomId).emit(ACTIONS.CURSOR_POSITION_UPDATE, { cursors });
-
-    // Broadcast the cursor position to all connected clients in the room except the sender
-    // io.in(roomId).emit(ACTIONS.CURSOR_POSITION_UPDATE, {
-    //   cursors
-    // });
+  // Listen for CURSOR_POSITION_UPDATE from the client
+  // Listen for CURSOR_POSITION_UPDATE from the client
+  // Listen for CURSOR_POSITION_UPDATE from the client
+  socket.on(ACTIONS.CURSOR_POSITION_UPDATE, ({ roomId, socketId, username, x, y }) => {
+    // Broadcast the cursor position to all connected clients except the sender
+    socket.in(roomId).emit(ACTIONS.CURSOR_POSITION_UPDATE, {
+      socketId,
+      username,
+      cursorPosition: { x, y },
+    });
   });
-
-  // When a new user joins, send all existing cursors to that user
-  // socket.on(ACTIONS.JOINED, ({ socketId }) => {
-  //   // Get all existing cursors
-  //   const existingCursors = Object.values(cursors);
-
-  //   // Send the existing cursors to the new user
-  //   socket.to(socketId).emit(ACTIONS.ALL_CURSORS_UPDATE, existingCursors);
-  // });
-
-
 
 
 
   // sync the code
-  socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code, }) => {
+  socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
     socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
   });
+  // when new user join the room all the code which are there are also shows on that persons editor
   socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
     io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });
   });

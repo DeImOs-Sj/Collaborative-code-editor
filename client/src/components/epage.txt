@@ -185,17 +185,14 @@ function EditorPage() {
 
       {/* Editor panel */}
       <div className="flex flex-1">
-        <CursorTracker roomId={roomId} socketRef={socketRef}
+        <CursorTracker roomid={roomId} socketRef={socketRef}
           username={Location.state?.username}
-          clients={clients} // Pass the clients state to CursorTracker
 
         />
 
 
         <Editor
           socketRef={socketRef}
-          username={Location.state?.username}
-
           roomId={roomId}
           onCodeChange={(code) => {
             codeRef.current = code;
