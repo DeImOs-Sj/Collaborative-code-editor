@@ -45,9 +45,9 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
   // data receive from server
   useEffect(() => {
     if (socketRef.current) {
-      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code, username }) => {
+      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code}) => {
         if (code !== null) {
-          editorRef.current.setValue(code, username);
+          editorRef.current.setValue(code);
         }
       });
     }

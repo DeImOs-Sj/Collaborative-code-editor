@@ -3,6 +3,7 @@ const app = express();
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const compiler = require('compilex');
 
 
 const http = require("http");
@@ -13,6 +14,8 @@ const { Server } = require("socket.io");
 const ACTIONS = require("./Actions");
 
 const server = http.createServer(app);
+const options = { stats: true }; //prints stats on console 
+compiler.init(options);
 
 const io = new Server(server);
 app.use(bodyParser.json()); // Add this line
@@ -68,6 +71,71 @@ app.post('/login', async (req, res) => {
   res.cookie('authToken', token, { httpOnly: true });
   res.json({ token });
 });
+
+app.post('/editor/:roomId', async (req, res) => {
+
+
+  console.log('Received request:', req.body);
+
+  var code = req.body.code;
+  var input = req.body.input;
+  var inputRadio = req.inputRadio;
+  var lang = req.body.lang;
+  if (lang === "C" || lang === "C++") {
+    if (inputRadio === "true") {
+      var envData = { OS: "windows", cmd: "g++" }; // (uses g++ command to compile )
+
+      var envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } }; // ( uses gcc command to compile )
+      compiler.compileCPPWithInput(envData, code, input, function (data) {
+        res.send(data);
+      });
+    }
+    else {
+      var envData = { OS: "windows", cmd: "g++" }; // (uses g++ command to compile )
+      var envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } }; // ( uses gcc command to compile )
+
+      compiler.compileCPP(envData, code, function (data) {
+        res.send(data);
+        // data.error = error message
+        // data.output = output value
+      });
+
+    }
+  } if (lang === "Python") {
+    if (inputRadio === "true") {
+
+      //if windows  
+      var envData = { OS: "windows" };
+      //else
+      var envData = { OS: "linux" };
+      compiler.compilePythonWithInput(envData, code, input, function (data) {
+
+        res.send("HI", data);
+      });
+
+    } else {
+      //if windows  
+      var envData = { OS: "windows" };
+      //else
+      var envData = { OS: "linux" };
+      compiler.compilePython(envData, code, function (data) {
+        console.log(data)
+        res.send(data);
+      });
+    }
+
+  }
+
+})
+
+app.get('/editor/:roomId', async (req, res) => {
+
+  compiler.editor(function (data) {
+    // console.log('Code Output:', data);
+
+    res.send(data)
+  })
+})
 
 const userSocketMap = {};
 const getAllConnectedClients = (roomId) => {
@@ -154,5 +222,8 @@ io.on("connection", (socket) => {
 });
 
 const PORT = 5000; // Use a fixed port number
+compiler.flush(function () {
+  console.log('All temporary files flushed !');
+});
 
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

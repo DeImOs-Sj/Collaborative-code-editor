@@ -39,20 +39,6 @@ const CursorTracker = ({ socketRef, clients, roomId, username }) => {
             window.removeEventListener('mousemove', handleMouseMove);
         };
     }, [socketRef, roomId, username]);
-    // Update your client-side code to handle the entire cursors object
-    // useEffect(() => {
-    //     if (socketRef.current) {
-    //         socketRef.current.on(ACTIONS.CURSOR_POSITION_UPDATE, (updatedCursors) => {
-    //             setClientCursors(updatedCursors);
-    //             console.log('hghf', updatedCursors)
-
-    //         });
-    //     }
-
-    //     return () => {
-    //         socketRef.current.off(ACTIONS.CURSOR_POSITION_UPDATE);
-    //     };
-    // }, [socketRef]);
 
 
 
@@ -85,7 +71,6 @@ const CursorTracker = ({ socketRef, clients, roomId, username }) => {
         <>
             {clients.map((client) => {
 
-                console.log(clientCursors[client.username])
                 return (<div
                     key={client.socketId}
                     className="w-4 h-4 absolute rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer border-2 border-white"
@@ -98,7 +83,7 @@ const CursorTracker = ({ socketRef, clients, roomId, username }) => {
                         pointerEvents: 'none',
                     }}
                 >
-                    <span className="text-white text-xs font-semibold">{client.username}</span>
+                    <span className="text-[#ff9f1c] m-3  text-xs font-semibold">{client.username}</span>
                 </div>)
             })}
         </>
