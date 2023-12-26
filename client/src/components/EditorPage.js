@@ -221,72 +221,73 @@ function EditorPage() {
           }}
 
         />
-      </div>
 
-      <form
-        className="flex flex-col w-1/2 p-4 bg-white"
-        onSubmit={(e) => {
-          e.preventDefault(); // Prevent the default form submission
-          runCode(e); // Call your runCode function manually
-        }}
-      >
-        <div className="flex flex-row items-center mt-4 gap-x-2">
-          <input
-            type="radio"
-            name="inputRadio"
-            id="inputRadioYes"
-            checked={inputRadio}
-            onChange={() => setInputRadio(true)}
-          />
-          <label htmlFor="inputRadioYes" className="text-sm">
-            Yes
-          </label>
-
-          <input
-            type="radio"
-            name="inputRadio"
-            id="inputRadioNo"
-            checked={!inputRadio}
-            onChange={() => setInputRadio(false)}
-          />
-          <label htmlFor="inputRadioNo" className="text-sm">
-            No
-          </label>
-
-          <select
-            className="flex flex-row"
-            value={lang}
-            onChange={(e) => setLang(e.target.value)}
-            style={{ appearance: "none", paddingRight: "1rem" }}
-          >
-            <option value="C">C</option>
-            <option value="C++">C++</option>
-            <option value="Python">Python</option>
-          </select>
-        </div>
-
-        <textarea
-          id="input"
-          defaultValue={input}
-          name="code"
-          className="w-full h-1/2 bg-gray-800 text-white p-2 mt-4"
-          placeholder="Input for your code"
-        ></textarea>
-
-        <button
-          type="submit" // Use type="submit" for the button inside a form
-          className="w-full mt-4 bg-[#3481ff] px-4 py-2 text-white"
+        <form
+          className="flex flex-col w-1/2 p-4 bg-gray-100 rounded-tl-lg	rounded-bl-lg"
+          onSubmit={(e) => {
+            e.preventDefault(); // Prevent the default form submission
+            runCode(e); // Call your runCode function manually
+          }}
         >
-          Run Code
-        </button>
+          <div className="flex flex-row items-center  mt-4 gap-x-2">
+            <h6 className="">INPUT FOR CODE</h6>
+            <input
+              type="radio"
+              name="inputRadio"
+              id="inputRadioYes"
+              checked={inputRadio}
+              onChange={() => setInputRadio(true)}
+            />
+            <label htmlFor="inputRadioYes" className="text-sm ">
+              Yes
+            </label>
 
-        <textarea
-          className="w-full h-1/2 mt-4 bg-gray-800 text-white p-2"
-          placeholder="Output will be displayed here..."
-          value={output}
-          readOnly
-        ></textarea>
-      </form>
+            <input
+              type="radio"
+              name="inputRadio"
+              id="inputRadioNo"
+              checked={!inputRadio}
+              onChange={() => setInputRadio(false)}
+            />
+            <label htmlFor="inputRadioNo" className="text-sm ">
+              No
+            </label>
+            <h6>SELECT LANGUAGE</h6>
+            <select
+              className="custom-select"
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              style={{ appearance: "none", paddingRight: "1rem" }}
+            >
+              <option value="C">C</option>
+              <option value="C++">C++</option>
+              <option value="Python">Python</option>
+            </select>
+          </div>
+          <br />
+          <textarea
+            id="input"
+            defaultValue={input}
+            name="code"
+            className="w-full h-1/2 bg-gray-800 text-white p-2 mt-4 rounded-lg"
+            placeholder="Input for your code"
+          ></textarea>
+
+          <button
+            type="submit" // Use type="submit" for the button inside a form
+            className="w-full mt-4 bg-[#3481ff] px-4 py-2 text-white"
+          >
+            Run Code
+          </button>
+
+          <textarea
+            className="w-full h-1/2 mt-4 bg-gray-800 text-white p-2 rounded-lg"
+            placeholder="Output will be displayed here..."
+            value={output}
+            readOnly
+          ></textarea>
+        </form>
+      </div>
 
     </div>
   );
