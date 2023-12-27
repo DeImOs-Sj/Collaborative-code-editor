@@ -111,22 +111,20 @@ function EditorPage() {
 
   const runCode = async (e) => {
     e.preventDefault();
-    const inputValue = input;
-    const inputRadioYes = inputRadio;
-    const inputRadioNo = !inputRadio;
 
     try {
       const response = await axios.post(`http://localhost:5000/editor/${roomId}`, {
         code: codeRef.current,
-        input: inputValue,
-        inputRadio: inputRadioYes,
-        inputRadioNo,
+        input: input,
+        inputRadio: inputRadio,
         lang: lang,
       });
 
       if (response.status === 200) {
         const result = response.data;
-        setOutput(result);
+        setOutput(result.output);
+        console.log(result.compiledCode); // This will log the compiled code from the server
+
       } else {
         console.error("Error:", response.status, response.statusText);
         setOutput("Error occurred while running the code.");
@@ -136,6 +134,7 @@ function EditorPage() {
       setOutput("Error occurred while running the code.");
     }
   };
+
   return (
     <div className="flex bg-[#3e4444]">
 
@@ -262,6 +261,9 @@ function EditorPage() {
               <option value="C">C</option>
               <option value="C++">C++</option>
               <option value="Python">Python</option>
+              <option value="JavaScript">JavaScript</option>
+
+
             </select>
           </div>
           <br />
@@ -279,14 +281,15 @@ function EditorPage() {
           >
             Run Code
           </button>
-
           <textarea
             className="w-full h-1/2 mt-4 bg-gray-800 text-white p-2 rounded-lg"
             placeholder="Output will be displayed here..."
             value={output}
             readOnly
           ></textarea>
+
         </form>
+
       </div>
 
     </div>

@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const compiler = require('compilex');
+const { exec } = require('child_process'); // Add this line
+const fs = require('fs'); // Add this line to use the 'fs' module for file operations
 
 
 const http = require("http");
@@ -15,7 +17,6 @@ const ACTIONS = require("./Actions");
 
 const server = http.createServer(app);
 const options = { stats: true }; //prints stats on console 
-compiler.init(options);
 
 const io = new Server(server);
 app.use(bodyParser.json()); // Add this line
@@ -81,50 +82,89 @@ app.post('/editor/:roomId', async (req, res) => {
   var input = req.body.input;
   var inputRadio = req.inputRadio;
   var lang = req.body.lang;
-  if (lang === "C" || lang === "C++") {
-    if (inputRadio === "true") {
-      var envData = { OS: "windows", cmd: "g++" }; // (uses g++ command to compile )
-
-      var envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } }; // ( uses gcc command to compile )
-      compiler.compileCPPWithInput(envData, code, input, function (data) {
-        res.send(data);
+  if (lang === 'C' || lang === 'C++') {
+    if (inputRadio === 'true') {
+      const command = `echo '${input}' | g++ -o executable -xc++ - && ./executable`;
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Error:', stderr);
+          res.send({ error: stderr });
+        } else {
+          console.log('Output:', stdout);
+          res.send({ output: stdout, compiledCode: stdout });
+        }
       });
-    }
-    else {
-      var envData = { OS: "windows", cmd: "g++" }; // (uses g++ command to compile )
-      var envData = { OS: "linux", cmd: "gcc", options: { timeout: 10000 } }; // ( uses gcc command to compile )
-
-      compiler.compileCPP(envData, code, function (data) {
-        res.send(data);
-        // data.error = error message
-        // data.output = output value
-      });
-
-    }
-  } if (lang === "Python") {
-    if (inputRadio === "true") {
-
-      //if windows  
-      var envData = { OS: "windows" };
-      //else
-      var envData = { OS: "linux" };
-      compiler.compilePythonWithInput(envData, code, input, function (data) {
-
-        res.send("HI", data);
-      });
-
     } else {
-      //if windows  
-      var envData = { OS: "windows" };
-      //else
-      var envData = { OS: "linux" };
-      compiler.compilePython(envData, code, function (data) {
-        console.log(data)
-        res.send(data);
+      // Assuming `code` contains the C++ code
+      const command = `echo '${code}' > source.cpp && g++ -o executable source.cpp && ./executable`;
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Error:', stderr);
+          res.send({ error: stderr });
+        } else {
+          console.log('Output:', stdout);
+          res.send({ output: stdout, compiledCode: stdout });
+        }
       });
     }
-
   }
+
+  if (lang === 'Python') {
+    if (inputRadio === 'true') {
+      const command = `echo '${input}' | python3 -c '${code}'`;
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Error:', stderr);
+          res.send({ error: stderr });
+        } else {
+          console.log('Output:', stdout);
+          res.send({ output: stdout, compiledCode: stdout }); // Include compiled code in the response
+        }
+      });
+    } else {
+      const command = `python3 -c '${code}'`;
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Error:', stderr);
+          res.send({ error: stderr });
+        } else {
+          console.log('Output:', stdout);
+          res.send({ output: stdout, compiledCode: stdout }); // Include compiled code in the response
+        }
+      });
+    }
+  } if (lang === 'JavaScript') {
+    if (inputRadio === 'true') {
+      const command = `echo '${input}' '${code}' | node source.js `;
+      console.log(input)
+      console.log(code)
+
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Error:', error.message);
+          res.send({ error: error.message });
+        } else {
+          console.log('Output:', stdout);
+          res.send({ output: stdout, executedCode: stdout });
+        }
+      });
+    } else {
+      // Assuming `code` contains the JavaScript code
+      const command = `echo '${code}'> source.js && node source.js`;
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error('Error:', error.message);
+          res.send({ error: error.message });
+        } else {
+          console.log('Output:', stdout);
+          res.send({ output: stdout, executedCode: stdout });
+        }
+      });
+    }
+  }
+
+
+
 
 })
 
@@ -222,8 +262,8 @@ io.on("connection", (socket) => {
 });
 
 const PORT = 5000; // Use a fixed port number
-compiler.flush(function () {
-  console.log('All temporary files flushed !');
-});
+// compiler.flush(function () {
+//   console.log('All temporary files flushed !');
+// });
 
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
