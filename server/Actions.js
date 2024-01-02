@@ -9,6 +9,8 @@ const ACTIONS = {
   LEAVE: "leave",
   CURSOR_POSITION_UPDATE: "update-cursor-position", // Add this for cursor position update
   UPDATE_CURSORS: "update-cursors",
+  CURSOR_ACTIVITY: "cursor-activity",
+
 };
 
 module.exports = ACTIONS;

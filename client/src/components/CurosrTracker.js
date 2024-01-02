@@ -29,8 +29,12 @@ const CursorTracker = ({ socketRef, clients, roomId, username }) => {
                     username,  // Ensure that the correct username is used here
                     x: position.x,
                     y: position.y,
+
                 });
+                console.log(clientCursors)
+
             }
+
         };
 
         window.addEventListener('mousemove', handleMouseMove);

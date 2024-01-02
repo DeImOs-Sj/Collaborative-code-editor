@@ -22,7 +22,8 @@ function EditorPage() {
   const [input, setInput] = useState("");
   const [code, setCode] = useState(""); // New state to store the code
 
-
+  const [incomingTime, setIncomingTime] = useState(null);
+  const [outgoingTime, setOutgoingTime] = useState(null);
 
   const [cursor, setcusror] = useState([]);
   const codeRef = useRef(null);
@@ -57,7 +58,11 @@ function EditorPage() {
           if (username !== Location.state?.username) {
           }
           setClients(clients);
-          toast.success(`${username} joined the room.`);
+          setIncomingTime(new Date().toLocaleTimeString());
+
+          toast.success(`${username} joined the room at ${new Date().toLocaleTimeString()}`);
+
+          // toast.success(`${username} joined the room.`);
 
           // also send the code to sync
           socketRef.current.emit(ACTIONS.SYNC_CODE, {
@@ -74,7 +79,9 @@ function EditorPage() {
 
       // listening for disconnected
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
-        toast.success(`${username} left the room`);
+        setOutgoingTime(new Date().toLocaleTimeString());
+
+        toast.success(`${username} Left the room at ${new Date().toLocaleTimeString()}`);
         setClients((prev) => {
           return prev.filter((client) => client.socketId !== socketId);
         });
@@ -97,7 +104,7 @@ function EditorPage() {
   const copyRoomId = async () => {
     try {
       await navigator.clipboard.writeText(roomId);
-      toast.success(`roomIs is copied`);
+      toast.success(`roomId is copied`);
     } catch (error) {
       console.log(error);
       toast.error("unable to copy the room Id");
@@ -185,8 +192,14 @@ function EditorPage() {
             <h3 className="font-medium text-lg  mt-2  text-center">Connected</h3>
             <div className=" p-[2rem]">
               {clients.map((client) => (
-                <Client key={client.socketId} username={client.username} />
+                <Client
+                  key={client.socketId}
+                  username={client.username}
+                  incomingTime={incomingTime}
+                  outgoingTime={outgoingTime}
+                />
               ))}
+
             </div>
           </div>
 
@@ -269,11 +282,13 @@ function EditorPage() {
           <br />
           <textarea
             id="input"
-            defaultValue={input}
+            value={input}  // Use value instead of defaultValue
+            onChange={(e) => setInput(e.target.value)}  // Update the input state on change
             name="code"
             className="w-full h-1/2 bg-gray-800 text-white p-2 mt-4 rounded-lg"
             placeholder="Input for your code"
           ></textarea>
+
 
           <button
             type="submit" // Use type="submit" for the button inside a form
@@ -282,7 +297,7 @@ function EditorPage() {
             Run Code
           </button>
           <textarea
-            className="w-full h-1/2 mt-4 bg-gray-800 text-white p-2 rounded-lg"
+            className="w-full h-1/2 mt-4 bg-gray-800 text-white text-xl p-2 rounded-lg"
             placeholder="Output will be displayed here..."
             value={output}
             readOnly

@@ -80,7 +80,7 @@ app.post('/editor/:roomId', async (req, res) => {
 
   var code = req.body.code;
   var input = req.body.input;
-  var inputRadio = req.inputRadio;
+  var inputRadio = req.body.inputRadio;
   var lang = req.body.lang;
   if (lang === 'C' || lang === 'C++') {
     if (inputRadio === 'true') {
@@ -135,10 +135,7 @@ app.post('/editor/:roomId', async (req, res) => {
     }
   } if (lang === 'JavaScript') {
     if (inputRadio === 'true') {
-      const command = `echo '${input}' '${code}' | node source.js `;
-      console.log(input)
-      console.log(code)
-
+      const command = `echo "${input}" | node -e "${code}"`;
       exec(command, (error, stdout, stderr) => {
         if (error) {
           console.error('Error:', error.message);
@@ -150,7 +147,8 @@ app.post('/editor/:roomId', async (req, res) => {
       });
     } else {
       // Assuming `code` contains the JavaScript code
-      const command = `echo '${code}'> source.js && node source.js`;
+      const escapedCode = code.replace(/"/g, '\\"');
+      const command = `node -e "${escapedCode}"`
       exec(command, (error, stdout, stderr) => {
         if (error) {
           console.error('Error:', error.message);
@@ -162,6 +160,7 @@ app.post('/editor/:roomId', async (req, res) => {
       });
     }
   }
+
 
 
 
@@ -190,7 +189,7 @@ const getAllConnectedClients = (roomId) => {
 };
 
 const cursors = {}; // Maintain a dictionary of cursors for each user in the room
-
+console.log(cursors)
 
 io.on("connection", (socket) => {
   // console.log('Socket connected', socket.id);
@@ -217,7 +216,7 @@ io.on("connection", (socket) => {
 
     cursors[username] = { x, y };
     socket.in(roomId).emit(ACTIONS.CURSOR_POSITION_UPDATE, { cursors });
-
+    console.log(cursors)
     // Broadcast the cursor position to all connected clients in the room except the sender
     // io.in(roomId).emit(ACTIONS.CURSOR_POSITION_UPDATE, {
     //   cursors
@@ -238,8 +237,8 @@ io.on("connection", (socket) => {
 
 
   // sync the code
-  socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code, }) => {
-    socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
+  socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code, username }) => {
+    socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code, username });
   });
   socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
     io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });

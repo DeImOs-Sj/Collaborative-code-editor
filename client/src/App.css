@@ -52,3 +52,58 @@ body {
 .custom-select:focus {
         border-color: #007bff;
 }
+
+/* Add these styles to your existing styles or create a new CSS file */
+.CodeMirror-cursor-user-username1 {
+        border-left: 2px solid #ff0000;
+        /* Use a color or style to distinguish the cursor for user1 */
+}
+
+.CodeMirror-cursor-user-username2 {
+        border-left: 2px solid #00ff00;
+        /* Use a color or style to distinguish the cursor for user2 */
+}
+
+/* Add these styles to your existing styles or create a new CSS file */
+.virtual-cursor {
+        width: 2px;
+        /* Adjust the width of the virtual cursor as needed */
+        background-color: #ff0000;
+        /* Use a color to distinguish the virtual cursor for user1 */
+        height: 10%;
+        position: absolute;
+        z-index: 10;
+        /* Adjust the z-index to make sure it's on top of the CodeMirror editor content */
+}
+
+/* Add these styles to your existing styles or create a new CSS file */
+.cursor-marker {
+        background-color: yellow;
+        /* Adjust the background color as needed */
+}
+
+/* Add more styles for additional users if needed */
+
+/* Add more styles for additional users if needed */
+/* Add more styles for additional users if needed */
+.client-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+}
+
+.client-info {
+        display: flex;
+        flex-direction: column;
+        margin-left: 10px;
+}
+
+.username {
+        margin-right: 5px;
+        font-weight: bold;
+}
+
+.time-info {
+        font-size: 12px;
+        color: #555;
+}

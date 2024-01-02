@@ -45,7 +45,7 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
   // data receive from server
   useEffect(() => {
     if (socketRef.current) {
-      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code}) => {
+      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
         if (code !== null) {
           editorRef.current.setValue(code);
         }
@@ -58,7 +58,7 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
 
   return (
     <div >
-      <textarea id="realtimeEditor"></textarea>
+      <textarea id="realtimeEditor" className=""></textarea>
     </div>
   );
 }
