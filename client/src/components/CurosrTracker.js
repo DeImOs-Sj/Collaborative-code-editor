@@ -31,7 +31,7 @@ const CursorTracker = ({ socketRef, clients, roomId, username }) => {
                     y: position.y,
 
                 });
-                console.log(clientCursors)
+                // console.log(clientCursors)
 
             }
 
@@ -48,12 +48,11 @@ const CursorTracker = ({ socketRef, clients, roomId, username }) => {
 
     useEffect(() => {
         setTimeout(() => {
-            console.log(socketRef.current.connected)
+            // console.log(socketRef.current.connected)
 
             if (socketRef.current.connected) {
-                console.log('hi')
                 socketRef.current.on(ACTIONS.CURSOR_POSITION_UPDATE, (data) => {
-                    console.log('hi data', data)
+                    // console.log('hi data', data)
                     // setClientCursors((prev) => ({ ...prev, [data.username]: { x: data.x, y: data.y } }));
                     setClientCursors(data.cursors);
 

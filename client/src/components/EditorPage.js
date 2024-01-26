@@ -70,7 +70,7 @@ function EditorPage() {
             socketId,
           });
           setTimeout(() => {
-            console.log(codeRef.current);
+            // console.log(codeRef.current);
           }, 2000);
         }
       );
@@ -226,6 +226,7 @@ function EditorPage() {
         <Editor
           socketRef={socketRef}
           username={Location.state?.username}
+          clients={clients} // Pass the clients state to CursorTracker
 
           roomId={roomId}
           onCodeChange={(code) => {

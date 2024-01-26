@@ -1,11 +1,13 @@
 const express = require("express");
 const app = express();
+const { MongoClient } = require("mongodb");
+
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const compiler = require('compilex');
-const { exec } = require('child_process'); // Add this line
-const fs = require('fs'); // Add this line to use the 'fs' module for file operations
+const { exec } = require('child_process');
+const fs = require('fs');
 
 
 const http = require("http");
@@ -29,7 +31,7 @@ app.use(cors({
 const db = mongoose.connection;
 
 
-mongoose.connect('mongodb://localhost/code', {
+mongoose.connect("mongodb://localhost:27017/code", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -188,8 +190,11 @@ const getAllConnectedClients = (roomId) => {
   );
 };
 
-const cursors = {}; // Maintain a dictionary of cursors for each user in the room
-console.log(cursors)
+const cursors = {};
+const cursorPosition = {}
+// Maintain a dictionary of cursors for each user in the room
+// console.log(cursors)
+// const codecursors = {};
 
 io.on("connection", (socket) => {
   // console.log('Socket connected', socket.id);
@@ -216,7 +221,7 @@ io.on("connection", (socket) => {
 
     cursors[username] = { x, y };
     socket.in(roomId).emit(ACTIONS.CURSOR_POSITION_UPDATE, { cursors });
-    console.log(cursors)
+    // console.log(cursors)
     // Broadcast the cursor position to all connected clients in the room except the sender
     // io.in(roomId).emit(ACTIONS.CURSOR_POSITION_UPDATE, {
     //   cursors
@@ -237,11 +242,18 @@ io.on("connection", (socket) => {
 
 
   // sync the code
-  socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code, username }) => {
-    socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code, username });
-  });
-  socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
-    io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });
+  socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code, username, cursorPos }) => {
+    // Check if the user already has a cursor position recorded
+    if (!cursorPosition[username]) {
+      cursorPosition[username] = {};
+    }
+    console.log(username)
+    // Update the cursor position for the user
+    cursorPosition[username].cursorPos = cursorPos;
+
+    console.log(cursorPos);
+
+    socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code, username, });
   });
 
   // leave room
