@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 const { MongoClient } = require("mongodb");
+const Peer = require('simple-peer');
+const wrtc = require('wrtc');
 
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -189,9 +191,10 @@ const getAllConnectedClients = (roomId) => {
     }
   );
 };
+const peers = {};
 
 const cursors = {};
-const cursorPosition = {}
+let cursorPositions = {};
 // Maintain a dictionary of cursors for each user in the room
 // console.log(cursors)
 // const codecursors = {};
@@ -213,7 +216,73 @@ io.on("connection", (socket) => {
 
     });
   });
-  // Server-side
+
+
+  socket.on(ACTIONS.JOIN_VIDEO, ({ roomId, username }) => {
+    userSocketMap[socket.id] = username;
+    socket.join(roomId);
+    const clients = getAllConnectedClients(roomId);
+    console.log(clients)
+    clients.forEach(({ socketId }) => {
+      if (socketId !== socket.id) {
+        const peer = new Peer({
+          initiator: true,
+          trickle: false,
+          wrtc, // specify wrtc as an option
+
+        });
+        // console.log(peer)
+        peer.on("signal", (data) => {
+          io.to(socketId).emit(ACTIONS.CALL_REQUEST, {
+            signalData: data,
+            from: socket.id,
+            username,
+          });
+        });
+
+        peer.on("connect", () => {
+          // Connected to peer
+          console.log('Connected to peer:', socketId);
+        });
+
+        peers[socketId] = peer;
+      }
+    });
+  });
+
+  socket.on(ACTIONS.ANSWER_CALL, ({ signalData, to }) => {
+    if (peers[to]) {
+      peers[to].signal(signalData);
+    } else {
+      console.error(`Peer with key ${to} not found in peers.`);
+    }
+  });
+
+
+  socket.on(ACTIONS.CALL_ACCEPTED, ({ signalData, to }) => {
+    console.log("Joined bhau");
+
+    peers[to].signal(signalData);
+  });
+
+  socket.on("disconnecting", () => {
+    const rooms = [...socket.rooms];
+
+    rooms.forEach((roomId) => {
+      socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
+        socketId: socket.id,
+        username: userSocketMap[socket.id],
+      });
+
+      if (peers[socket.id]) {
+        peers[socket.id].destroy();
+        delete peers[socket.id];
+      }
+    });
+
+    delete userSocketMap[socket.id];
+    socket.leave();
+  });
 
   // Listen for cursor position updates
   socket.on(ACTIONS.CURSOR_POSITION_UPDATE, ({ roomId, username, x, y }) => {
@@ -241,19 +310,21 @@ io.on("connection", (socket) => {
 
 
 
-  // sync the code
   socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code, username, cursorPos }) => {
     // Check if the user already has a cursor position recorded
-    if (!cursorPosition[username]) {
-      cursorPosition[username] = {};
+    if (!cursorPositions[username]) {
+      cursorPositions[username] = { cursorPos: null };
     }
-    console.log(username)
+
     // Update the cursor position for the user
-    cursorPosition[username].cursorPos = cursorPos;
+    cursorPositions[username].cursorPos = cursorPos;
 
-    console.log(cursorPos);
+    // console.log(username);
 
-    socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code, username, });
+
+    // Emit the code change event to all clients in the room
+    socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code, username, cursorPositions });
+    console.log(cursorPositions);
   });
 
   // leave room

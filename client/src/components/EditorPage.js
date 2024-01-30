@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Client from "./Client";
 import Editor from "./Editor";
 import axios from 'axios';
-
 import { initSocket } from "../Socket";
 import { ACTIONS } from "../Actions";
 import {
@@ -13,6 +12,7 @@ import {
 } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import CursorTracker from "./CurosrTracker";
+import Peer from 'simple-peer';
 
 function EditorPage() {
   const [clients, setClients] = useState([]);
@@ -33,6 +33,8 @@ function EditorPage() {
   const { roomId } = useParams();
 
   const socketRef = useRef(null);
+  const peers = {}; // Change from array to object
+
   useEffect(() => {
     const init = async () => {
       socketRef.current = await initSocket();
@@ -86,6 +88,68 @@ function EditorPage() {
           return prev.filter((client) => client.socketId !== socketId);
         });
       });
+
+      socketRef.current.on(ACTIONS.CALL_REQUEST, ({ signalData, from, username }) => {
+        const acceptCall = window.confirm(`${username} is calling. Do you want to accept the call?`);
+        console.log("JOINED");
+        if (acceptCall) {
+          console.log("is it running?");
+          const peer = new Peer({
+            initiator: false,
+            trickle: false,
+          });
+          console.log(peer)
+
+          peer.on("signal", (data) => {
+            console.log("Signaling...");
+            // Send the signal data to the server
+            socketRef.current.emit(ACTIONS.ANSWER_CALL, { signalData: data, to: from });
+          });
+
+          socketRef.current.on(ACTIONS.ANSWER_CALL, ({ signalData, to }) => {
+            console.log("Calling successful");
+            try {
+              if (peers[to]) {
+                peers[to].signal(signalData);
+              } else {
+                throw new Error(`Peer with key ${to} not found in peers.`);
+              }
+            } catch (error) {
+              console.error('Error in ANSWER_CALL:', error.message);
+            }
+          });
+
+
+
+          peer.on("connect", () => {
+            console.log('Connected to peer:', from);
+            socketRef.current.emit(ACTIONS.CALL_ACCEPTED, { signalData: signalData, to: from });
+          });
+
+          peers[from] = peer;
+
+          peer.signal(signalData);
+
+        }
+      });
+
+      // peer.on("signal", (data) => {
+      socketRef.current.on(ACTIONS.ANSWER_CALL, ({ signalData, to }) => {
+        console.log("calling succesful")
+
+        try {
+          if (peers[to]) {
+            peers[to].signal(signalData);
+
+          } else {
+            throw new Error(`Peer with key ${to} not found in peers.`);
+          }
+        } catch (error) {
+          console.error('Error in ANSWER_CALL:', error.message);
+        }
+      });
+      // });
+
     };
     init();
 
@@ -101,6 +165,7 @@ function EditorPage() {
     return <Navigate to="/home" />;
   }
 
+
   const copyRoomId = async () => {
     try {
       await navigator.clipboard.writeText(roomId);
@@ -110,6 +175,15 @@ function EditorPage() {
       toast.error("unable to copy the room Id");
     }
   };
+  const startCall = () => {
+    console.log("Start Video Call");
+    socketRef.current.emit(ACTIONS.JOIN_VIDEO, {
+      roomId,
+      username: Location.state?.username,
+    });
+  }
+
+  // Add more logs in other parts of your code as needed
 
   const leaveRoom = async () => {
     navigate("/");
@@ -202,6 +276,7 @@ function EditorPage() {
 
             </div>
           </div>
+          <button onClick={() => startCall()}>Start Video Call</button>
 
           <button className="relative group overflow-hidden bg-[#3481ff] px-8 mb-10 h-12 flex space-x-2 items-center ">
             <span className="relative text-sm w-[4rem]  text-white" onClick={copyRoomId}>

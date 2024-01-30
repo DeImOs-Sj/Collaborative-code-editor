@@ -10,4 +10,8 @@ export const ACTIONS = {
   CURSOR_POSITION_UPDATE: "update-cursor-position", // Add this for cursor position update
   UPDATE_CURSORS: "update-cursors",
   CURSOR_ACTIVITY: "cursor-activity",
+  JOIN_VIDEO: "video",
+  CALL_REQUEST: "call",
+  ANSWER_CALL: "answer",
+  CALL_ACCEPTED: "accepted"
 };

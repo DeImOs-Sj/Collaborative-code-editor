@@ -9,8 +9,9 @@ import { ACTIONS } from "../Actions";
 
 function Editor({ socketRef, roomId, username, onCodeChange }) {
   const [userCursors, setUserCursors] = useState({});
+
   const editorRef = useRef(null);
-  const cursorMarkers = useRef({}); // Add this line to define cursorMarkers
+  const cursorMarkers = useRef({});
 
   useEffect(() => {
     const init = async () => {
@@ -25,16 +26,17 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
         }
       );
 
+
       editorRef.current = editor;
 
       editor.setSize(null, "100%");
 
       editorRef.current.on("change", (instance, changes) => {
         const { origin } = changes;
-        console.log(username);
 
         const code = instance.getValue();
         const cursorPos = editor.getCursor();
+        console.log(cursorPos)
 
         onCodeChange(code);
 
@@ -51,62 +53,48 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
 
     init();
   }, []);
+
   useEffect(() => {
     if (socketRef.current) {
-      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code, username, cursorPos }) => {
+      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code, username, cursorPositions }) => {
         if (code !== null) {
           editorRef.current.setValue(code);
-          console.log(cursorPos)
-
-          // Use a callback for setUserCursors to ensure you're working with the latest state
-          setUserCursors((prevCursors) => ({
-            ...prevCursors,
-            [username]: cursorPos,
-          }));
 
           // Clear existing markers
-          Object.values(cursorMarkers.current).forEach((marker) => {
-            marker.clear();
-          });
-          console.log(cursorMarkers.current)
-          // Update markers based on the latest cursor positions
-          Object.entries(userCursors).forEach(([username, pos]) => {
-            if (pos && pos.line !== undefined && pos.ch !== undefined) {
-              const cursorClassName = `cursor-marker-${username}`;
-              console.log(username)
+          for (const marker in cursorMarkers.current) {
+            cursorMarkers.current[marker].clear();
+          }
 
-              // Add Tailwind CSS classes for styling
-              cursorMarkers.current[username] = editorRef.current.markText(pos, pos, {
-                className: `absolute ${cursorClassName} bg-blue-500 px-1`,
-                handleMouseEvents: true,
-              });
+          // Set new cursor positions
+          setUserCursors(cursorPositions);
+          console.log(cursorPositions)
 
-              // Set position using Tailwind CSS
-              const cursorElement = document.querySelector(`.${cursorClassName}`);
-              if (cursorElement) {
-                cursorElement.style.top = `${pos.top}px`;
-                cursorElement.style.left = `${pos.left}px`;
-                cursorElement.style.backgroundColor = "black";
-              }
+          // Add new markers for each user's cursor
+          for (const user in cursorPositions) {
+            const cursor = cursorPositions[user].cursorPos;
+            if (cursor && user !== username) {
+              console.log(user)
+              const marker = editorRef.current.markText(
+                cursor,
+                { line: cursor.line, ch: cursor.ch + 1 },
+                { className: `cursor-marker-${user} text-blue`, clearOnEnter: true, }
+              );
+              editorRef.current.style.background = "#DAF7A6";
+              cursorMarkers.current[user] = marker;
             }
-          });
+          }
         }
       });
     }
 
     return () => {
       socketRef.current.off(ACTIONS.CODE_CHANGE);
-
-      // Clear markers in the cleanup phase
-      Object.values(cursorMarkers.current).forEach((marker) => {
-        marker.clear();
-      });
     };
-  }, [socketRef.current, userCursors]);
+  }, [socketRef.current, username]);
 
   return (
     <div className="relative">
-      <textarea id="realtimeEditor" className=""></textarea>
+      <textarea id="realtimeEditor" className="CodeMirror-cursors "></textarea>
     </div>
   );
 }
