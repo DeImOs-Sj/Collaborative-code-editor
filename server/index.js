@@ -254,7 +254,7 @@ io.on("connection", (socket) => {
     if (peers[to]) {
       peers[to].signal(signalData);
     } else {
-      console.error(`Peer with key ${to} not found in peers.`);
+      console.error(`Peer with key ${to} not found in peers.`, peers);
     }
   });
 

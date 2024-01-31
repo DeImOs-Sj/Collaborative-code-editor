@@ -9,9 +9,8 @@ import { ACTIONS } from "../Actions";
 
 function Editor({ socketRef, roomId, username, onCodeChange }) {
   const [userCursors, setUserCursors] = useState({});
-
   const editorRef = useRef(null);
-  const cursorMarkers = useRef({});
+  const cursorWidgets = useRef({});
 
   useEffect(() => {
     const init = async () => {
@@ -26,7 +25,6 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
         }
       );
 
-
       editorRef.current = editor;
 
       editor.setSize(null, "100%");
@@ -36,7 +34,6 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
 
         const code = instance.getValue();
         const cursorPos = editor.getCursor();
-        console.log(cursorPos)
 
         onCodeChange(code);
 
@@ -56,31 +53,30 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
 
   useEffect(() => {
     if (socketRef.current) {
-      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code, username, cursorPositions }) => {
+      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code, cursorPositions }) => {
         if (code !== null) {
           editorRef.current.setValue(code);
 
-          // Clear existing markers
-          for (const marker in cursorMarkers.current) {
-            cursorMarkers.current[marker].clear();
+          // Clear existing widgets
+          for (const user in cursorWidgets.current) {
+            const widget = cursorWidgets.current[user];
+            const parentElement = widget.parentNode;
+            parentElement.removeChild(widget);
           }
 
           // Set new cursor positions
           setUserCursors(cursorPositions);
-          console.log(cursorPositions)
 
-          // Add new markers for each user's cursor
+          // Add or update widgets for each user's cursor
           for (const user in cursorPositions) {
             const cursor = cursorPositions[user].cursorPos;
             if (cursor && user !== username) {
-              console.log(user)
-              const marker = editorRef.current.markText(
-                cursor,
-                { line: cursor.line, ch: cursor.ch + 1 },
-                { className: `cursor-marker-${user} text-blue`, clearOnEnter: true, }
-              );
-              editorRef.current.style.background = "#DAF7A6";
-              cursorMarkers.current[user] = marker;
+              const widget = document.createElement("div");
+              widget.className = `cursor-widget cursor-widget-${user} bg-blue-500 text-white p-1 rounded`;
+              widget.textContent = user;
+
+              editorRef.current.addWidget(cursor, widget, true);
+              cursorWidgets.current[user] = widget;
             }
           }
         }
@@ -92,9 +88,10 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
     };
   }, [socketRef.current, username]);
 
+
   return (
     <div className="relative">
-      <textarea id="realtimeEditor" className="CodeMirror-cursors "></textarea>
+      <textarea id="realtimeEditor" className="CodeMirror-cursors"></textarea>
     </div>
   );
 }
