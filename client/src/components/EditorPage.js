@@ -104,6 +104,7 @@ function EditorPage() {
             console.log("Signaling...");
             // Send the signal data to the server
             socketRef.current.emit(ACTIONS.ANSWER_CALL, { signalData: data, to: from });
+
           });
 
           socketRef.current.on(ACTIONS.ANSWER_CALL, ({ signalData, to }) => {

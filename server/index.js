@@ -191,10 +191,12 @@ const getAllConnectedClients = (roomId) => {
     }
   );
 };
-const peers = {};
+
 
 const cursors = {};
 let cursorPositions = {};
+const peers = {};
+
 // Maintain a dictionary of cursors for each user in the room
 // console.log(cursors)
 // const codecursors = {};
@@ -212,28 +214,34 @@ io.on("connection", (socket) => {
         username,
         socketId: socket.id,
       });
-      console.log('Connected clients:', clients);
 
     });
   });
 
+  console.log("console1", peers)
 
   socket.on(ACTIONS.JOIN_VIDEO, ({ roomId, username }) => {
     userSocketMap[socket.id] = username;
+    // console.log(socket.id)
+    // console.log(roomId)
     socket.join(roomId);
     const clients = getAllConnectedClients(roomId);
-    console.log(clients)
+    // console.log(clients)
     clients.forEach(({ socketId }) => {
+      // console.log("hi render this ", socketId)
+
       if (socketId !== socket.id) {
         const peer = new Peer({
           initiator: true,
           trickle: false,
-          wrtc, // specify wrtc as an option
+          wrtc,
 
         });
         // console.log(peer)
         peer.on("signal", (data) => {
           io.to(socketId).emit(ACTIONS.CALL_REQUEST, {
+
+
             signalData: data,
             from: socket.id,
             username,
@@ -242,20 +250,29 @@ io.on("connection", (socket) => {
 
         peer.on("connect", () => {
           // Connected to peer
-          console.log('Connected to peer:', socketId);
+          console.log('Connected to peer:', socket.id);
         });
 
-        peers[socketId] = peer;
+        peers[socket.id] = peer;
+
       }
     });
   });
 
   socket.on(ACTIONS.ANSWER_CALL, ({ signalData, to }) => {
+    console.log('Attempting to signal to peer with key:', to);
     if (peers[to]) {
-      peers[to].signal(signalData);
+
+      if (peers[to].readyState === 'open') {
+        console.log("HEllllo")
+        peers[to].signal(signalData);
+      } else {
+        console.error(`Peer with key ${to} is not in the open state.`);
+      }
     } else {
-      console.error(`Peer with key ${to} not found in peers.`, peers);
+      console.error(`Peer with key ${to} not found in peers.`);
     }
+
   });
 
 
@@ -324,7 +341,7 @@ io.on("connection", (socket) => {
 
     // Emit the code change event to all clients in the room
     socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code, username, cursorPositions });
-    console.log(cursorPositions);
+    // console.log(cursorPositions);
   });
 
   // leave room

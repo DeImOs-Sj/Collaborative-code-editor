@@ -24,12 +24,10 @@ function Editor({ socketRef, roomId, username, onCodeChange }) {
           lineNumbers: true,
         }
       );
-
       editorRef.current = editor;
+      // editor.setSize(null, "100%");
 
-      editor.setSize(null, "100%");
-
-      editorRef.current.on("change", (instance, changes) => {
+      editor.on("change", (instance, changes) => {
         const { origin } = changes;
 
         const code = instance.getValue();
