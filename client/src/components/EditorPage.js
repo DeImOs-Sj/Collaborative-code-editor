@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Client from "./Client";
 import Editor from "./Editor";
 import axios from 'axios';
@@ -12,7 +12,8 @@ import {
 } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import CursorTracker from "./CurosrTracker";
-import Peer from 'simple-peer';
+import ReactPlayer from "react-player";
+import peer from "../peer";
 
 function EditorPage() {
   const [clients, setClients] = useState([]);
@@ -20,152 +21,110 @@ function EditorPage() {
   const [inputRadio, setInputRadio] = useState(false);
   const [lang, setLang] = useState("C");
   const [input, setInput] = useState("");
-  const [code, setCode] = useState(""); // New state to store the code
-
+  const [code, setCode] = useState("");
   const [incomingTime, setIncomingTime] = useState(null);
   const [outgoingTime, setOutgoingTime] = useState(null);
-
   const [cursor, setcusror] = useState([]);
   const codeRef = useRef(null);
-
   const Location = useLocation();
   const navigate = useNavigate();
   const { roomId } = useParams();
-
   const socketRef = useRef(null);
-  const peers = {}; // Change from array to object
+  const peers = {};
+
+  const [myStream, setMyStream] = useState();
+  const [remoteStream, setRemoteStream] = useState();
 
   useEffect(() => {
     const init = async () => {
-      socketRef.current = await initSocket();
-      socketRef.current.on("connect_error", (err) => handleErrors(err));
-      socketRef.current.on("connect_failed", (err) => handleErrors(err));
+      try {
+        socketRef.current = await initSocket();
+        socketRef.current.on("connect_error", (err) => handleErrors(err));
+        socketRef.current.on("connect_failed", (err) => handleErrors(err));
 
-      const handleErrors = (err) => {
-        console.log("Error", err);
-        toast.error("Socket connection failed, Try again later");
-        navigate("/home");
-      };
-
-      socketRef.current.emit(ACTIONS.JOIN, {
-        roomId,
-        username: Location.state?.username,
-      });
-
-      // Listen for new clients joining the chatroom
-      socketRef.current.on(
-        ACTIONS.JOINED,
-        ({ clients, username, socketId }) => {
-          // this insure that new user connected message do not display to that user itself
-          if (username !== Location.state?.username) {
-          }
-          setClients(clients);
-          setIncomingTime(new Date().toLocaleTimeString());
-
-          toast.success(`${username} joined the room at ${new Date().toLocaleTimeString()}`);
-
-          // toast.success(`${username} joined the room.`);
-
-          // also send the code to sync
-          socketRef.current.emit(ACTIONS.SYNC_CODE, {
-            code: codeRef.current,
-            socketId,
-          });
-          setTimeout(() => {
-            // console.log(codeRef.current);
-          }, 2000);
-        }
-      );
-
-
-
-      // listening for disconnected
-      socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
-        setOutgoingTime(new Date().toLocaleTimeString());
-
-        toast.success(`${username} Left the room at ${new Date().toLocaleTimeString()}`);
-        setClients((prev) => {
-          return prev.filter((client) => client.socketId !== socketId);
+        socketRef.current.emit(ACTIONS.JOIN, {
+          roomId,
+          username: Location.state?.username,
         });
-      });
 
-      socketRef.current.on(ACTIONS.CALL_REQUEST, ({ signalData, from, username }) => {
-        const acceptCall = window.confirm(`${username} is calling. Do you want to accept the call?`);
-        console.log("JOINED");
-        if (acceptCall) {
-          console.log("is it running?");
-          const peer = new Peer({
-            initiator: false,
-            trickle: false,
-          });
-          console.log(peer)
-
-          peer.on("signal", (data) => {
-            console.log("Signaling...");
-            // Send the signal data to the server
-            socketRef.current.emit(ACTIONS.ANSWER_CALL, { signalData: data, to: from });
-
-          });
-
-          socketRef.current.on(ACTIONS.ANSWER_CALL, ({ signalData, to }) => {
-            console.log("Calling successful");
-            try {
-              if (peers[to]) {
-                peers[to].signal(signalData);
-              } else {
-                throw new Error(`Peer with key ${to} not found in peers.`);
-              }
-            } catch (error) {
-              console.error('Error in ANSWER_CALL:', error.message);
+        // Listen for new clients joining the chatroom
+        socketRef.current.on(
+          ACTIONS.JOINED,
+          ({ clients, username, socketId }) => {
+            // this insure that new user connected message do not display to that user itself
+            if (username !== Location.state?.username) {
             }
-          });
+            setClients(clients);
+            setIncomingTime(new Date().toLocaleTimeString());
 
+            toast.success(`${username} joined the room at ${new Date().toLocaleTimeString()}`);
 
+            // toast.success(`${username} joined the room.`);
 
-          peer.on("connect", () => {
-            console.log('Connected to peer:', from);
-            socketRef.current.emit(ACTIONS.CALL_ACCEPTED, { signalData: signalData, to: from });
-          });
-
-          peers[from] = peer;
-
-          peer.signal(signalData);
-
-        }
-      });
-
-      // peer.on("signal", (data) => {
-      socketRef.current.on(ACTIONS.ANSWER_CALL, ({ signalData, to }) => {
-        console.log("calling succesful")
-
-        try {
-          if (peers[to]) {
-            peers[to].signal(signalData);
-
-          } else {
-            throw new Error(`Peer with key ${to} not found in peers.`);
+            // also send the code to sync
+            socketRef.current.emit(ACTIONS.SYNC_CODE, {
+              code: codeRef.current,
+              socketId,
+            });
+            setTimeout(() => {
+              // console.log(codeRef.current);
+            }, 2000);
           }
-        } catch (error) {
-          console.error('Error in ANSWER_CALL:', error.message);
-        }
-      });
-      // });
+        );
 
+        socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
+          setOutgoingTime(new Date().toLocaleTimeString());
+
+          toast.success(`${username} Left the room at ${new Date().toLocaleTimeString()}`);
+          setClients((prev) => {
+            return prev.filter((client) => client.socketId !== socketId);
+          });
+        });
+
+        socketRef.current.on(ACTIONS.JOINED, handleJoined);
+        socketRef.current.on(ACTIONS.DISCONNECTED, handleDisconnected);
+      } catch (error) {
+        handleErrors(error);
+      }
     };
     init();
 
-    // cleanup
     return () => {
-      socketRef.current && socketRef.current.disconnect();
-      socketRef.current.off(ACTIONS.JOINED);
-      socketRef.current.off(ACTIONS.DISCONNECTED);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.off(ACTIONS.JOINED, handleJoined);
+        socketRef.current.off(ACTIONS.DISCONNECTED, handleDisconnected);
+      }
     };
   }, []);
 
-  if (!Location.state) {
-    return <Navigate to="/home" />;
-  }
+  const handleErrors = (err) => {
+    console.log("Error", err);
+    toast.error("Socket connection failed, Try again later");
+    navigate("/home");
+  };
 
+  const handleJoined = ({ clients, username, socketId }) => {
+    if (username !== Location.state?.username) {
+      // this insure that new user connected message do not display to that user itself
+      setClients(clients);
+      setIncomingTime(new Date().toLocaleTimeString());
+
+      toast.success(`${username} joined the room at ${new Date().toLocaleTimeString()}`);
+
+      socketRef.current.emit(ACTIONS.SYNC_CODE, {
+        code: codeRef.current,
+        socketId,
+      });
+    }
+  };
+
+  const handleDisconnected = ({ socketId, username }) => {
+    setOutgoingTime(new Date().toLocaleTimeString());
+
+    toast.success(`${username} Left the room at ${new Date().toLocaleTimeString()}`);
+    setClients((prev) => prev.filter((client) => client.socketId !== socketId));
+  };
 
   const copyRoomId = async () => {
     try {
@@ -176,19 +135,13 @@ function EditorPage() {
       toast.error("unable to copy the room Id");
     }
   };
+
   const startCall = () => {
     console.log("Start Video Call");
     socketRef.current.emit(ACTIONS.JOIN_VIDEO, {
       roomId,
       username: Location.state?.username,
     });
-  }
-
-  // Add more logs in other parts of your code as needed
-
-  const leaveRoom = async () => {
-    navigate("/");
-    toast.success(`Left the room`)
   };
 
   const runCode = async (e) => {
@@ -217,6 +170,91 @@ function EditorPage() {
     }
   };
 
+  const handleCallUser = useCallback(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
+    const offer = await peer.getOffer();
+    socketRef.current.emit("user:call", { to: setClients, offer });
+    setMyStream(stream);
+  }, []);
+
+  const handleIncommingCall = useCallback(async ({ from, offer }) => {
+    setClients(from);
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
+    setMyStream(stream);
+    console.log(`Incoming Call`, from, offer);
+    const ans = await peer.getAnswer(offer);
+    socketRef.current.emit("call:accepted", { to: from, ans });
+  }, []);
+
+  const sendStreams = useCallback(() => {
+    for (const track of myStream.getTracks()) {
+      peer.peer.addTrack(track, myStream);
+    }
+  }, [myStream]);
+
+  const handleCallAccepted = useCallback(({ from, ans }) => {
+    peer.setLocalDescription(ans);
+    console.log("Call Accepted!");
+    sendStreams();
+  }, [sendStreams]);
+
+  const handleNegoNeeded = useCallback(async () => {
+    const offer = await peer.getOffer();
+    socketRef.current.emit("peer:nego:needed", { offer, to: setClients });
+  }, []);
+
+  const handleNegoNeedIncomming = useCallback(async ({ from, offer }) => {
+    const ans = await peer.getAnswer(offer);
+    socketRef.current.emit("peer:nego:done", { to: from, ans });
+  }, []);
+
+  const handleNegoNeedFinal = useCallback(async ({ ans }) => {
+    await peer.setLocalDescription(ans);
+  }, []);
+
+  useEffect(() => {
+    peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
+    return () => {
+      peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
+    };
+  }, [handleNegoNeeded]);
+
+  useEffect(() => {
+    socketRef.current && socketRef.current.on("incomming:call", handleIncommingCall);
+    socketRef.current && socketRef.current.on("call:accepted", handleCallAccepted);
+    socketRef.current && socketRef.current.on("peer:nego:needed", handleNegoNeedIncomming);
+    socketRef.current && socketRef.current.on("peer:nego:final", handleNegoNeedFinal);
+
+    return () => {
+      socketRef.current && socketRef.current.off("incomming:call", handleIncommingCall);
+      socketRef.current && socketRef.current.off("call:accepted", handleCallAccepted);
+      socketRef.current && socketRef.current.off("peer:nego:needed", handleNegoNeedIncomming);
+      socketRef.current && socketRef.current.off("peer:nego:final", handleNegoNeedFinal);
+    };
+  }, [
+    handleIncommingCall,
+    handleCallAccepted,
+    handleNegoNeedIncomming,
+    handleNegoNeedFinal,
+  ]);
+
+  useEffect(() => {
+    peer.peer.addEventListener("track", async (ev) => {
+      const remoteStream = ev.streams;
+      console.log("GOT TRACKS!!");
+      setRemoteStream(remoteStream[0]);
+    });
+  }, []);
+  const leaveRoom = async () => {
+    navigate("/login");
+    toast.success(`Left the room`)
+  };
   return (
     <div className="flex bg-[#3e4444]">
 
@@ -382,6 +420,35 @@ function EditorPage() {
 
         </form>
 
+      </div>
+      <div className="bg-white">
+        <h4>{setClients ? "Connected" : "No one in room"}</h4>
+        {myStream && <button onClick={sendStreams}>Send Stream</button>}
+        {setClients && <button onClick={handleCallUser}>CALL</button>}
+        {myStream && (
+          <>
+            <h1>My Stream</h1>
+            <ReactPlayer
+              playing
+              muted
+              height="100px"
+              width="200px"
+              url={myStream}
+            />
+          </>
+        )}
+        {remoteStream && (
+          <>
+            <h1>Remote Stream</h1>
+            <ReactPlayer
+              playing
+              muted
+              height="100px"
+              width="200px"
+              url={remoteStream}
+            />
+          </>
+        )}
       </div>
 
     </div>

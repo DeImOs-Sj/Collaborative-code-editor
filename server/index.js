@@ -196,13 +196,10 @@ const getAllConnectedClients = (roomId) => {
 const cursors = {};
 let cursorPositions = {};
 const peers = {};
+console.log("heelo ", peers)
 
-// Maintain a dictionary of cursors for each user in the room
-// console.log(cursors)
-// const codecursors = {};
 
 io.on("connection", (socket) => {
-  // console.log('Socket connected', socket.id);
   socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
     userSocketMap[socket.id] = username;
     socket.join(roomId);
@@ -217,88 +214,27 @@ io.on("connection", (socket) => {
 
     });
   });
+  // console.log('Socket connected', socket.id);
 
-  console.log("console1", peers)
+  // console.log("untriggered", peers)
+  socket.on("user:call", ({ to, offer }) => {
 
-  socket.on(ACTIONS.JOIN_VIDEO, ({ roomId, username }) => {
-    userSocketMap[socket.id] = username;
-    // console.log(socket.id)
-    // console.log(roomId)
-    socket.join(roomId);
-    const clients = getAllConnectedClients(roomId);
-    // console.log(clients)
-    clients.forEach(({ socketId }) => {
-      // console.log("hi render this ", socketId)
-
-      if (socketId !== socket.id) {
-        const peer = new Peer({
-          initiator: true,
-          trickle: false,
-          wrtc,
-
-        });
-        // console.log(peer)
-        peer.on("signal", (data) => {
-          io.to(socketId).emit(ACTIONS.CALL_REQUEST, {
-
-
-            signalData: data,
-            from: socket.id,
-            username,
-          });
-        });
-
-        peer.on("connect", () => {
-          // Connected to peer
-          console.log('Connected to peer:', socket.id);
-        });
-
-        peers[socket.id] = peer;
-
-      }
-    });
+    io.to(to).emit("incomming:call", { from: socket.id, offer });
+    console.log(socket.id)
   });
 
-  socket.on(ACTIONS.ANSWER_CALL, ({ signalData, to }) => {
-    console.log('Attempting to signal to peer with key:', to);
-    if (peers[to]) {
-
-      if (peers[to].readyState === 'open') {
-        console.log("HEllllo")
-        peers[to].signal(signalData);
-      } else {
-        console.error(`Peer with key ${to} is not in the open state.`);
-      }
-    } else {
-      console.error(`Peer with key ${to} not found in peers.`);
-    }
-
+  socket.on("call:accepted", ({ to, ans }) => {
+    io.to(to).emit("call:accepted", { from: socket.id, ans });
   });
 
-
-  socket.on(ACTIONS.CALL_ACCEPTED, ({ signalData, to }) => {
-    console.log("Joined bhau");
-
-    peers[to].signal(signalData);
+  socket.on("peer:nego:needed", ({ to, offer }) => {
+    console.log("peer:nego:needed", offer);
+    io.to(to).emit("peer:nego:needed", { from: socket.id, offer });
   });
 
-  socket.on("disconnecting", () => {
-    const rooms = [...socket.rooms];
-
-    rooms.forEach((roomId) => {
-      socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
-        socketId: socket.id,
-        username: userSocketMap[socket.id],
-      });
-
-      if (peers[socket.id]) {
-        peers[socket.id].destroy();
-        delete peers[socket.id];
-      }
-    });
-
-    delete userSocketMap[socket.id];
-    socket.leave();
+  socket.on("peer:nego:done", ({ to, ans }) => {
+    console.log("peer:nego:done", ans);
+    io.to(to).emit("peer:nego:final", { from: socket.id, ans });
   });
 
   // Listen for cursor position updates
