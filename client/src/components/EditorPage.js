@@ -17,6 +17,7 @@ import peer from "../peer";
 
 function EditorPage() {
   const [clients, setClients] = useState([]);
+  
   const [output, setOutput] = useState("");
   const [inputRadio, setInputRadio] = useState(false);
   const [lang, setLang] = useState("C");
@@ -34,6 +35,7 @@ function EditorPage() {
 
   const [myStream, setMyStream] = useState();
   const [remoteStream, setRemoteStream] = useState();
+  console.log("THESE ARE CLIENTS",clients)
 
   useEffect(() => {
     const init = async () => {
@@ -54,7 +56,8 @@ function EditorPage() {
             // this insure that new user connected message do not display to that user itself
             if (username !== Location.state?.username) {
             }
-            setClients(clients);
+             setClients(clients);
+
             setIncomingTime(new Date().toLocaleTimeString());
 
             toast.success(`${username} joined the room at ${new Date().toLocaleTimeString()}`);
@@ -73,6 +76,7 @@ function EditorPage() {
         );
 
         socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
+          console.log("LOGGING SOCKET ID ",socketId)
           setOutgoingTime(new Date().toLocaleTimeString());
 
           toast.success(`${username} Left the room at ${new Date().toLocaleTimeString()}`);
@@ -136,14 +140,6 @@ function EditorPage() {
     }
   };
 
-  const startCall = () => {
-    console.log("Start Video Call");
-    socketRef.current.emit(ACTIONS.JOIN_VIDEO, {
-      roomId,
-      username: Location.state?.username,
-    });
-  };
-
   const runCode = async (e) => {
     e.preventDefault();
 
@@ -170,26 +166,23 @@ function EditorPage() {
     }
   };
 
+    
+
   const handleCallUser = useCallback(async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true,
     });
     const offer = await peer.getOffer();
-    socketRef.current.emit("user:call", { to: setClients, offer });
+   console.log("sending an offer",offer)
+    socketRef.current.emit("user:call", { to: clients, offer });
     setMyStream(stream);
   }, []);
 
   const handleIncommingCall = useCallback(async ({ from, offer }) => {
-    setClients(from);
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true,
-    });
-    setMyStream(stream);
-    console.log(`Incoming Call`, from, offer);
-    const ans = await peer.getAnswer(offer);
-    socketRef.current.emit("call:accepted", { to: from, ans });
+    console.log(from,offer)
+    console.log("incomming call ",from,offer)
+
   }, []);
 
   const sendStreams = useCallback(() => {
@@ -224,8 +217,10 @@ function EditorPage() {
       peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
     };
   }, [handleNegoNeeded]);
+  console.log(socketRef.current)
 
   useEffect(() => {
+    console.log("hi before calling and after",socketRef.current)
     socketRef.current && socketRef.current.on("incomming:call", handleIncommingCall);
     socketRef.current && socketRef.current.on("call:accepted", handleCallAccepted);
     socketRef.current && socketRef.current.on("peer:nego:needed", handleNegoNeedIncomming);
@@ -315,7 +310,7 @@ function EditorPage() {
 
             </div>
           </div>
-          <button onClick={() => startCall()}>Start Video Call</button>
+          {/* <button onClick={() => startCall()}>Start Video Call</button> */}
 
           <button className="relative group overflow-hidden bg-[#3481ff] px-8 mb-10 h-12 flex space-x-2 items-center ">
             <span className="relative text-sm w-[4rem]  text-white" onClick={copyRoomId}>

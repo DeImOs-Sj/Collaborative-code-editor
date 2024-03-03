@@ -192,7 +192,6 @@ const getAllConnectedClients = (roomId) => {
   );
 };
 
-
 const cursors = {};
 let cursorPositions = {};
 const peers = {};
@@ -200,6 +199,8 @@ console.log("heelo ", peers)
 
 
 io.on("connection", (socket) => {
+ 
+
   socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
     userSocketMap[socket.id] = username;
     socket.join(roomId);
@@ -217,11 +218,13 @@ io.on("connection", (socket) => {
   // console.log('Socket connected', socket.id);
 
   // console.log("untriggered", peers)
+  console.log("hi", userSocketMap)
+  // console.log(socket.id)
   socket.on("user:call", ({ to, offer }) => {
-
+  console.log("dfsdfsdf",to,offer)
     io.to(to).emit("incomming:call", { from: socket.id, offer });
-    console.log(socket.id)
   });
+
 
   socket.on("call:accepted", ({ to, ans }) => {
     io.to(to).emit("call:accepted", { from: socket.id, ans });

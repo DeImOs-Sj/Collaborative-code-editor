@@ -13,7 +13,6 @@ class PeerService {
             });
         }
     }
-
     async getAnswer(offer) {
         if (this.peer) {
             await this.peer.setRemoteDescription(offer);
