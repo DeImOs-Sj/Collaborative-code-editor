@@ -35,7 +35,7 @@ function EditorPage() {
 
   const [myStream, setMyStream] = useState();
   const [remoteStream, setRemoteStream] = useState();
-  console.log("THESE ARE CLIENTS",clients)
+  // console.log("THESE ARE CLIENTS",clients)
 
   useEffect(() => {
     const init = async () => {
@@ -76,7 +76,7 @@ function EditorPage() {
         );
 
         socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
-          console.log("LOGGING SOCKET ID ",socketId)
+          // console.log("LOGGING SOCKET ID ",socketId)
           setOutgoingTime(new Date().toLocaleTimeString());
 
           toast.success(`${username} Left the room at ${new Date().toLocaleTimeString()}`);
@@ -167,23 +167,41 @@ function EditorPage() {
   };
 
     
+const handleCallUser = useCallback(async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: true,
+  });
 
-  const handleCallUser = useCallback(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true,
-    });
-    const offer = await peer.getOffer();
-   console.log("sending an offer",offer)
-    socketRef.current.emit("user:call", { to: clients, offer });
-    setMyStream(stream);
-  }, []);
+  const offer = await peer.getOffer();
+  console.log("sending an offer", offer);
 
-  const handleIncommingCall = useCallback(async ({ from, offer }) => {
-    console.log(from,offer)
-    console.log("incomming call ",from,offer)
+  // Filter out the socket ID of the current user
+  const otherClients = clients.filter((client) => client.socketId !== socketRef.current.id);
 
-  }, []);
+  // Iterate over each client and emit the offer to their socket ID
+  otherClients.forEach((client) => {
+    console.log("from handleCallUser function",client)
+    socketRef.current.emit("user:call", { to: client.socketId, offer });
+  });
+
+  setMyStream(stream);
+}, [clients]); // Make sure to include clients in the dependency array to capture its latest value
+
+  const handleIncommingCall = useCallback(
+    async ({ from, offer }) => {
+      // setRemoteSocketId(from);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      setMyStream(stream);
+      console.log(`Incoming Call`, from, offer);
+      const ans = await peer.getAnswer(offer);
+      socketRef.current.emit("call:accepted", { to: from, ans });
+    },
+    []
+  );
 
   const sendStreams = useCallback(() => {
     for (const track of myStream.getTracks()) {
@@ -217,10 +235,9 @@ function EditorPage() {
       peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
     };
   }, [handleNegoNeeded]);
-  console.log(socketRef.current)
+  // console.log(socketRef.current)
 
   useEffect(() => {
-    console.log("hi before calling and after",socketRef.current)
     socketRef.current && socketRef.current.on("incomming:call", handleIncommingCall);
     socketRef.current && socketRef.current.on("call:accepted", handleCallAccepted);
     socketRef.current && socketRef.current.on("peer:nego:needed", handleNegoNeedIncomming);
