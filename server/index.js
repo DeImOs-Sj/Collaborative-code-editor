@@ -18,6 +18,7 @@ const bodyParser = require('body-parser'); // Add this line
 
 const { Server } = require("socket.io");
 const ACTIONS = require("./Actions");
+const { off } = require("process");
 
 const server = http.createServer(app);
 const options = { stats: true }; //prints stats on console 
@@ -220,10 +221,16 @@ io.on("connection", (socket) => {
   // console.log("untriggered", peers)
   console.log("hi", userSocketMap)
   // console.log(socket.id)
-  socket.on("user:call", ({ to, offer }) => {
-  console.log("dfsdfsdf",to,offer)
-    io.to(to).emit("incomming:call", { from: socket.id, offer });
-  });
+socket.on("user:call", ({ to, offer }) => {
+  console.log("dfsdfsdf", to, offer);
+  if (!to || !offer) {
+    console.error("Invalid data received for user:call event.");
+    return;
+  }
+  // Emit the call to the specified user
+  io.to(to).emit("incoming:call", { from: socket.id, offer });
+});
+
 
 
   socket.on("call:accepted", ({ to, ans }) => {

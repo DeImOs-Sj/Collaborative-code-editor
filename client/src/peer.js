@@ -12,16 +12,23 @@ class PeerService {
         });
     }
     
-    async getAnswer(offer) {
-        console.log("Received offer:", offer);
-        await this.peer.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await this.peer.createAnswer();
-        await this.peer.setLocalDescription(new RTCSessionDescription(answer));
-        return answer;
-    }
+    // async getAnswer(offer) {
+    //     await this.peer.setRemoteDescription(new RTCSessionDescription(offer));
+    //     const ans = await this.peer.createAnswer();
+    //     await this.peer.setLocalDescription(new RTCSessionDescription(ans));
+    //     return ans;
+    //     console.log(ans)
 
-    async setLocalDescription(answer) {
-        await this.peer.setLocalDescription(new RTCSessionDescription(answer));
+    // }
+    async getAnswer(offer) {
+    await this.peer.setRemoteDescription(new RTCSessionDescription(offer));
+    const ans = await this.peer.createAnswer();
+    await this.peer.setLocalDescription(new RTCSessionDescription(ans));
+    return ans;
+}
+
+    async setLocalDescription(ans) {
+        await this.peer.setRemoteDescription(new RTCSessionDescription(ans));
     }
 
     async getOffer() {
