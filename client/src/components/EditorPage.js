@@ -207,11 +207,14 @@ const handleCallUser = useCallback(async () => {
 
 };
 
-  const sendStreams = useCallback(() => {
+const sendStreams = useCallback(() => {
+  if (myStream) {
     for (const track of myStream.getTracks()) {
+      // Add each track to the peer connection
       peer.peer.addTrack(track, myStream);
     }
-  }, [myStream]);
+  }
+}, [myStream, peer]);
 
  const handleCallAccepted = useCallback(
     ({ from, ans }) => {
